@@ -21,52 +21,13 @@ Idiomatic Python patterns and best practices for Python 3.11+.
 
 Python prioritizes readability. Code should be obvious and easy to understand.
 
-```python
-# Good: Clear and readable
-def get_active_users(users: list[User]) -> list[User]:
-    """Return only active users from the provided list."""
-    return [user for user in users if user.is_active]
-
-
-# Bad: Clever but confusing
-def get_active_users(u):
-    return [x for x in u if x.a]
-```
-
 ### 2. Explicit is Better Than Implicit
 
 Avoid magic; be clear about what your code does.
 
-```python
-# Good: Explicit configuration
-import logging
-
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-)
-
-# Bad: Hidden side effects
-import some_module
-some_module.setup()  # What does this do?
-```
-
 ### 3. EAFP - Easier to Ask Forgiveness Than Permission
 
 Python prefers exception handling over checking conditions.
-
-```python
-# Good: EAFP style
-def get_value(dictionary: dict[str, Any], key: str, default: Any = None) -> Any:
-    try:
-        return dictionary[key]
-    except KeyError:
-        return default
-
-
-# Acceptable: dict.get() for simple cases
-value = dictionary.get(key, default)
-```
 
 ## Type Hints (Python 3.11+)
 
