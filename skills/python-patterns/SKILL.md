@@ -210,6 +210,51 @@ def get_user(user_id: str) -> User:
     return user
 ```
 
+## Logging
+
+Always use the built-in `logging` module — never `print()` for application output. Configure handlers to write to both console and a log file.
+
+```python
+import logging
+import sys
+
+# Configure basic logging to file and stdout
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.FileHandler("app.log"),
+        logging.StreamHandler(sys.stdout)
+    ]
+)
+logging.info('Message goes to both file and console')
+```
+
+Use module-level loggers in library code (not the root logger):
+
+```python
+import logging
+
+logger = logging.getLogger(__name__)
+
+def process_user(user_id: str) -> None:
+    logger.info("Processing user: %s", user_id)
+    try:
+        result = do_work(user_id)
+        logger.debug("Result: %s", result)
+    except Exception:
+        logger.exception("Failed to process user: %s", user_id)
+        raise
+```
+
+| Level | Use for |
+|-------|---------|
+| `DEBUG` | Detailed diagnostic info |
+| `INFO` | Normal operation events |
+| `WARNING` | Unexpected but recoverable |
+| `ERROR` | Failure in a specific operation |
+| `CRITICAL` | Application-level fatal error |
+
 ## Pathlib Over `os.path`
 
 Always use `pathlib.Path` for filesystem operations.
