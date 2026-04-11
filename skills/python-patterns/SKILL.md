@@ -1,12 +1,10 @@
 ---
 name: python-patterns
-description: Pythonic idioms, modern type hints, and best practices for building robust, efficient, and maintainable Python 3.11+ applications.
+description: Pythonic idioms, type hints, and best practices for building robust, efficient, and maintainable Python applications.
 origin: ECC
 ---
 
 # Python Development Patterns
-
-Idiomatic Python patterns and best practices for Python 3.11+.
 
 ## When to Activate
 
@@ -29,190 +27,9 @@ Avoid magic; be clear about what your code does.
 
 Python prefers exception handling over checking conditions.
 
-## Type Hints (Python 3.11+)
-
-### Use Built-in Types and `|` Unions
-
-Never import `Optional`, `List`, `Dict`, `Union`, `Tuple` from `typing` - use built-ins and `|`.
-
-```python
-# Good: Modern type hints
-def process_user(
-    user_id: str,
-    data: dict[str, Any],
-    active: bool = True,
-) -> User | None:
-    """Process a user and return the updated User or None."""
-    if not active:
-        return None
-    return User(user_id, data)
-
-
-def process_items(items: list[str]) -> dict[str, int]:
-    return {item: len(item) for item in items}
-
-
-# Bad: Legacy typing imports (Python < 3.9 style)
-from typing import Optional, List, Dict
-
-def process_user(data: Dict[str, Any]) -> Optional[User]: ...
-```
-
-### TypeAlias and TypeVar
-
-```python
-from typing import Any, TypeAlias, TypeVar
-
-# Explicit type alias
-JSON: TypeAlias = dict[str, Any] | list[Any] | str | int | float | bool | None
-
-
-def parse_json(data: str) -> JSON:
-    import json
-    return json.loads(data)
-
-
-# Generic types
-T = TypeVar("T")
-
-
-def first(items: list[T]) -> T | None:
-    """Return the first item or None if list is empty."""
-    return items[0] if items else None
-```
-
-### Self Type (Python 3.11+)
-
-```python
-from typing import Self
-
-
-class Builder:
-    def set_name(self, name: str) -> Self:
-        self._name = name
-        return self
-
-    def set_value(self, value: int) -> Self:
-        self._value = value
-        return self
-```
-
-### Protocol-Based Duck Typing
-
-```python
-from typing import Protocol
-
-
-class Renderable(Protocol):
-    def render(self) -> str:
-        """Render the object to a string."""
-
-
-def render_all(items: list[Renderable]) -> str:
-    """Render all items that implement the Renderable protocol."""
-    return "\n".join(item.render() for item in items)
-```
-
-### TypeGuard for Narrowing
-
-```python
-from typing import TypeGuard
-
-
-def is_string_list(val: list[object]) -> TypeGuard[list[str]]:
-    return all(isinstance(x, str) for x in val)
-```
-
-## Structural Pattern Matching (Python 3.10+)
-
-```python
-# Match on type and structure - replaces isinstance chains
-def handle_command(command: dict[str, Any]) -> str:
-    match command:
-        case {"action": "quit"}:
-            return "Goodbye!"
-        case {"action": "go", "direction": direction}:
-            return f"Going {direction}"
-        case {"action": action}:
-            return f"Unknown action: {action}"
-        case _:
-            return "Invalid command"
-
-
-# Match on types
-def describe(value: object) -> str:
-    match value:
-        case int() | float():
-            return f"Number: {value}"
-        case str():
-            return f"String of length {len(value)}"
-        case list():
-            return f"List with {len(value)} items"
-        case _:
-            return "Unknown"
-```
-
-## Error Handling Patterns
-
-### Specific Exception Handling
-
-```python
-import json
-from pathlib import Path
-
-
-def load_config(path: Path) -> Config:
-    try:
-        return Config.from_json(path.read_text())
-    except FileNotFoundError as e:
-        raise ConfigError(f"Config file not found: {path}") from e
-    except json.JSONDecodeError as e:
-        raise ConfigError(f"Invalid JSON in config: {path}") from e
-```
-
-### Exception Groups (Python 3.11+)
-
-```python
-# Raise multiple exceptions at once
-def validate_all(items: list[str]) -> None:
-    errors = [ValueError(f"Invalid: {item}") for item in items if not item]
-    if errors:
-        raise ExceptionGroup("Validation failed", errors)
-
-
-# Handle exception groups
-try:
-    validate_all(data)
-except* ValueError as eg:
-    for err in eg.exceptions:
-        print(f"  - {err}")
-```
-
-### Custom Exception Hierarchy
-
-```python
-class AppError(Exception):
-    """Base exception for all application errors."""
-
-
-class ValidationError(AppError):
-    """Raised when input validation fails."""
-
-
-class NotFoundError(AppError):
-    """Raised when a requested resource is not found."""
-
-
-def get_user(user_id: str) -> User:
-    user = db.find_user(user_id)
-    if not user:
-        raise NotFoundError(f"User not found: {user_id}")
-    return user
-```
-
 ## Logging
 
-Always use the built-in `logging` module — never `print()` for application output. Configure handlers to write to both console and a log file.
+Always use the built-in `logging` module - never `print()` for application output. Configure handlers to write to both console and a log file.
 
 ```python
 import logging
@@ -271,10 +88,6 @@ config_dir.mkdir(parents=True, exist_ok=True)
 
 # Find all Python files recursively
 py_files = list(Path("src").rglob("*.py"))
-
-# Bad: os.path
-import os
-config_dir = os.path.join(os.path.expanduser("~"), ".config", "myapp")
 ```
 
 ## Context Managers
@@ -298,35 +111,6 @@ def timer(name: str) -> Generator[None, None, None]:
 
 with timer("data processing"):
     process_large_dataset()
-```
-
-### Context Manager Classes
-
-```python
-class DatabaseTransaction:
-    def __init__(self, connection: Connection) -> None:
-        self.connection = connection
-
-    def __enter__(self) -> Self:
-        self.connection.begin_transaction()
-        return self
-
-    def __exit__(
-        self,
-        exc_type: type[BaseException] | None,
-        exc_val: BaseException | None,
-        exc_tb: TracebackType | None,
-    ) -> bool:
-        if exc_type is None:
-            self.connection.commit()
-        else:
-            self.connection.rollback()
-        return False  # Don't suppress exceptions
-
-
-with DatabaseTransaction(conn):
-    user = conn.create_user(user_data)
-    conn.create_profile(user.id, profile_data)
 ```
 
 ## Comprehensions and Generators
@@ -353,9 +137,7 @@ def read_lines(path: Path) -> Iterator[str]:
             yield line.strip()
 ```
 
-## Dataclasses and Named Tuples
-
-### Dataclasses
+## Dataclasses
 
 ```python
 from dataclasses import dataclass, field
@@ -385,76 +167,6 @@ class Point:
 
     def distance(self, other: Self) -> float:
         return ((self.x - other.x) ** 2 + (self.y - other.y) ** 2) ** 0.5
-```
-
-### Named Tuples
-
-```python
-from typing import NamedTuple
-
-
-class Coordinate(NamedTuple):
-    """Immutable geographic coordinate."""
-
-    latitude: float
-    longitude: float
-    altitude: float = 0.0
-```
-
-## Decorators
-
-### Function Decorators
-
-```python
-import functools
-import time
-from collections.abc import Callable
-from typing import Any
-
-
-def timer(func: Callable[..., Any]) -> Callable[..., Any]:
-    """Decorator to time function execution."""
-
-    @functools.wraps(func)
-    def wrapper(*args: Any, **kwargs: Any) -> Any:
-        start = time.perf_counter()
-        result = func(*args, **kwargs)
-        elapsed = time.perf_counter() - start
-        print(f"{func.__name__} took {elapsed:.4f}s")
-        return result
-
-    return wrapper
-
-
-@timer
-def slow_function() -> None:
-    time.sleep(1)
-```
-
-### Parameterized Decorators
-
-```python
-def retry(times: int, exceptions: tuple[type[Exception], ...] = (Exception,)):
-    """Retry a function up to `times` on specified exceptions."""
-
-    def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
-        @functools.wraps(func)
-        def wrapper(*args: Any, **kwargs: Any) -> Any:
-            for attempt in range(times):
-                try:
-                    return func(*args, **kwargs)
-                except exceptions:
-                    if attempt == times - 1:
-                        raise
-            return None
-
-        return wrapper
-
-    return decorator
-
-
-@retry(times=3, exceptions=(TimeoutError, ConnectionError))
-def fetch_data(url: str) -> bytes: ...
 ```
 
 ## Concurrency Patterns
@@ -549,52 +261,12 @@ myproject/
 └── .gitignore
 ```
 
-### Import Conventions
-
-Ruff (`I` rules) enforces import order automatically: stdlib → third-party → local.
-
-```python
-# stdlib
-import json
-from pathlib import Path
-
-# third-party
-import httpx
-from fastapi import FastAPI
-
-# local
-from mypackage.models import User
-from mypackage.utils import format_name
-```
-
-### `__init__.py` for Package Exports
-
-```python
-# mypackage/__init__.py
-"""mypackage - A sample Python package."""
-
-__version__ = "1.0.0"
-
-from mypackage.models import Post, User
-from mypackage.utils import format_name
-
-__all__ = ["User", "Post", "format_name"]
-```
 
 ## Memory and Performance
 
-### Use `__slots__` or Frozen Dataclasses
+### Frozen Dataclasses
 
 ```python
-# __slots__ for plain classes - reduces per-instance memory
-class Point:
-    __slots__ = ("x", "y")
-
-    def __init__(self, x: float, y: float) -> None:
-        self.x = x
-        self.y = y
-
-
 # Frozen dataclass - immutable + slot optimisation
 @dataclass(frozen=True, slots=True)
 class Vector:
@@ -614,42 +286,16 @@ for item in items:
 result = "".join(str(item) for item in items)
 ```
 
-## Tooling
-
-### Essential Commands
-
-```bash
-# Format + lint (replaces black + isort + flake8)
-ruff format .
-ruff check .
-ruff check --fix .
-
-# Type checking
-mypy src/
-
-# Testing with coverage
-pytest --cov=mypackage --cov-report=term-missing
-
-# Security scanning
-bandit -r src/
-
-# Dependency auditing
-pip-audit
-```
-
 ## Quick Reference: Python 3.11+ Idioms
 
 | Idiom | Notes |
 |-------|-------|
 | `X \| Y` union syntax | Replaces `Optional[X]` / `Union[X, Y]` |
-| `match` statement | Structural pattern matching (3.10+) |
 | `ExceptionGroup` / `except*` | Multi-error handling (3.11+) |
-| `Self` type | Return type for fluent APIs (3.11+) |
 | `@dataclass(slots=True)` | Auto `__slots__` (3.10+) |
 | `pathlib.Path` | All filesystem operations |
 | `asyncio.gather` | Concurrent async I/O |
 | Generator expressions | Lazy evaluation, large datasets |
-| `ruff format` + `ruff check` | Single tool for format + lint |
 
 ## Anti-Patterns to Avoid
 
@@ -686,10 +332,10 @@ if value is None:
 
 
 # Bad: wildcard imports
-from os.path import *
+from math import *
 
 # Good: explicit
-from os.path import exists, join
+from math import sqrt, pi
 
 
 # Bad: bare except
